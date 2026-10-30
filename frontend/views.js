@@ -42,6 +42,31 @@ const VOICE_PROVIDERS = [
   }
 ];
 
+const COUNTRY_CODES = [
+  { code: '+1',   flag: '🇺🇸', label: 'US / Canada', format: '(XXX) XXX-XXXX', areaLen: 3, midLen: 3, endLen: 4 },
+  { code: '+44',  flag: '🇬🇧', label: 'United Kingdom', format: 'XXXX XXXXXX', areaLen: 4, midLen: 3, endLen: 3 },
+  { code: '+61',  flag: '🇦🇺', label: 'Australia', format: 'X XXXX XXXX', areaLen: 1, midLen: 4, endLen: 4 },
+  { code: '+49',  flag: '🇩🇪', label: 'Germany', format: 'XXX XXXXXXX', areaLen: 3, midLen: 4, endLen: 3 },
+  { code: '+33',  flag: '🇫🇷', label: 'France', format: 'X XX XX XX XX', areaLen: 1, midLen: 4, endLen: 4 },
+  { code: '+971', flag: '🇦🇪', label: 'UAE', format: 'XX XXX XXXX', areaLen: 2, midLen: 3, endLen: 4 },
+  { code: '+966', flag: '🇸🇦', label: 'Saudi Arabia', format: 'XX XXX XXXX', areaLen: 2, midLen: 3, endLen: 4 },
+  { code: '+91',  flag: '🇮🇳', label: 'India', format: 'XXXXX XXXXX', areaLen: 5, midLen: 3, endLen: 2 },
+  { code: '+92',  flag: '🇵🇰', label: 'Pakistan', format: 'XXX XXXXXXX', areaLen: 3, midLen: 4, endLen: 3 },
+  { code: '+55',  flag: '🇧🇷', label: 'Brazil', format: 'XX XXXXX-XXXX', areaLen: 2, midLen: 5, endLen: 4 },
+  { code: '+81',  flag: '🇯🇵', label: 'Japan', format: 'XX XXXX XXXX', areaLen: 2, midLen: 4, endLen: 4 },
+  { code: '+82',  flag: '🇰🇷', label: 'South Korea', format: 'XX XXXX XXXX', areaLen: 2, midLen: 4, endLen: 4 },
+  { code: '+86',  flag: '🇨🇳', label: 'China', format: 'XXX XXXX XXXX', areaLen: 3, midLen: 4, endLen: 4 },
+  { code: '+27',  flag: '🇿🇦', label: 'South Africa', format: 'XX XXX XXXX', areaLen: 2, midLen: 3, endLen: 4 },
+  { code: '+234', flag: '🇳🇬', label: 'Nigeria', format: 'XXX XXX XXXX', areaLen: 3, midLen: 3, endLen: 4 },
+  { code: '+52',  flag: '🇲🇽', label: 'Mexico', format: 'XX XXXX XXXX', areaLen: 2, midLen: 4, endLen: 4 },
+  { code: '+39',  flag: '🇮🇹', label: 'Italy', format: 'XXX XXX XXXX', areaLen: 3, midLen: 3, endLen: 4 },
+  { code: '+34',  flag: '🇪🇸', label: 'Spain', format: 'XXX XXX XXX', areaLen: 3, midLen: 3, endLen: 3 },
+  { code: '+7',   flag: '🇷🇺', label: 'Russia', format: 'XXX XXX-XX-XX', areaLen: 3, midLen: 3, endLen: 4 },
+  { code: '+65',  flag: '🇸🇬', label: 'Singapore', format: 'XXXX XXXX', areaLen: 4, midLen: 2, endLen: 2 },
+  { code: '+60',  flag: '🇲🇾', label: 'Malaysia', format: 'XX XXXX XXXX', areaLen: 2, midLen: 4, endLen: 4 },
+  { code: '+90',  flag: '🇹🇷', label: 'Turkey', format: 'XXX XXX XXXX', areaLen: 3, midLen: 3, endLen: 4 }
+];
+
 const DEFAULT_TEST_SCENARIOS = [
   { label: 'Ask Pricing & Packages', prompt: 'How much do your services cost and do you take insurance?' },
   { label: 'Book Tomorrow 10:30 AM', prompt: 'I want to book an appointment for tomorrow at 10:30 AM' },
@@ -530,8 +555,44 @@ function VoiceStudioView({
   const [speakingStyle, setSpeakingStyle] = useState('Natural, conversational, empathetic with sub-400ms turn-taking');
   const [greeting, setGreeting] = useState('');
   const [systemPrompt, setSystemPrompt] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('+1 (888) 412-9040');
+  const [countryCode, setCountryCode] = useState(COUNTRY_CODES[0]);
+  const [phoneNumber, setPhoneNumber] = useState('(888) 412-9040');
   const [isDeploying, setIsDeploying] = useState(false);
+  const [playingVoiceId, setPlayingVoiceId] = useState(null);
+
+  const previewVoice = (vp, e) => {
+    e.stopPropagation();
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      if (playingVoiceId === vp.id) {
+        setPlayingVoiceId(null);
+        return;
+      }
+      const samplePhrases = {
+        Rachel: `Hi there! Thank you for calling. My name is Rachel, and I'll be happy to help you schedule your appointment today.`,
+        Adam: `Good afternoon. This is Adam speaking. I'd be delighted to walk you through our premium listings and find the perfect property for you.`,
+        Nova: `Hey! Thanks for reaching out! I'm Nova, and I can get you connected with a technician right away. What's the issue you're experiencing?`,
+        Orion: `Welcome. I'm Orion, your dedicated financial advisor. Let me review your portfolio details and provide a comprehensive assessment.`,
+        Sterling: `Good evening. My name is Sterling, and it would be my absolute pleasure to arrange your exclusive VIP experience today.`
+      };
+      const phrase = samplePhrases[vp.voiceName] || `Hello, I'm ${vp.voiceName}. This is a preview of how I sound when assisting your customers.`;
+      const utter = new SpeechSynthesisUtterance(phrase);
+      const voiceSettings = {
+        Rachel: { pitch: 1.1, rate: 0.95 },
+        Adam: { pitch: 0.8, rate: 0.9 },
+        Nova: { pitch: 1.2, rate: 1.1 },
+        Orion: { pitch: 0.7, rate: 0.85 },
+        Sterling: { pitch: 0.9, rate: 0.88 }
+      };
+      const settings = voiceSettings[vp.voiceName] || { pitch: 1, rate: 1 };
+      utter.pitch = settings.pitch;
+      utter.rate = settings.rate;
+      utter.onend = () => setPlayingVoiceId(null);
+      utter.onerror = () => setPlayingVoiceId(null);
+      setPlayingVoiceId(vp.id);
+      window.speechSynthesis.speak(utter);
+    }
+  };
 
   // Live Voice Tester State
   const [orbState, setOrbState] = useState('idle'); // 'idle' | 'listening' | 'processing' | 'speaking'
@@ -554,11 +615,21 @@ function VoiceStudioView({
     [activeTenant]
   );
 
-  const generateNumber = () => {
-    const area = ['888', '800', '305', '415', '212'][Math.floor(Math.random() * 5)];
-    const mid = Math.floor(200 + Math.random() * 700);
-    const end = Math.floor(1000 + Math.random() * 8999);
-    setPhoneNumber(`+1 (${area}) ${mid}-${end}`);
+  const generateNumber = (cc) => {
+    const c = cc || countryCode;
+    const randDigits = (len) => {
+      let s = '';
+      for (let i = 0; i < len; i++) s += Math.floor(Math.random() * 10);
+      return s;
+    };
+    if (c.code === '+1') {
+      const area = ['888', '800', '305', '415', '212'][Math.floor(Math.random() * 5)];
+      const mid = Math.floor(200 + Math.random() * 700);
+      const end = Math.floor(1000 + Math.random() * 8999);
+      setPhoneNumber(`(${area}) ${mid}-${end}`);
+    } else {
+      setPhoneNumber(`${randDigits(c.areaLen)} ${randDigits(c.midLen)} ${randDigits(c.endLen)}`);
+    }
   };
 
   const fillSmartDefaults = () => {
@@ -590,7 +661,7 @@ function VoiceStudioView({
           name: agentName,
           type: 'voice',
           voiceId: selectedVoiceObj.id,
-          phoneNumber,
+          phoneNumber: `${countryCode.code} ${phoneNumber}`,
           greeting,
           systemPrompt,
           tenantSnapshot: targetTenantObj
@@ -674,7 +745,8 @@ function VoiceStudioView({
           confidence: data.confidence,
           latencyMs: data.latencyMs,
           voiceId: selectedVoiceAgent.voiceId,
-          payload: data.webhookPayloadInspector
+          payload: data.webhookPayloadInspector,
+          workflowState: data.workflowState
         });
         onSimulationEvent(selectedVoiceAgent, text, data);
 
@@ -963,9 +1035,11 @@ function VoiceStudioView({
           {step === 2 && (
             <div className="space-y-4 py-2 animate-view">
               <label className="block text-xs font-bold">Select Neural Voice Profile</label>
+              <p className="text-[11px] text-slate-400 -mt-2">Click the play button to preview each voice before selecting</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {VOICE_PROVIDERS.map((vp) => {
                   const active = selectedVoiceObj.id === vp.id;
+                  const isPlaying = playingVoiceId === vp.id;
                   return (
                     <div
                       key={vp.id}
@@ -978,9 +1052,33 @@ function VoiceStudioView({
                     >
                       <div className="flex items-center justify-between">
                         <span className="font-extrabold text-sm">{vp.voiceName}</span>
-                        <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-[#635BFF]/10 text-[#635BFF] dark:text-indigo-300">
-                          {vp.provider}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={(e) => previewVoice(vp, e)}
+                            title={isPlaying ? 'Stop Preview' : `Listen to ${vp.voiceName}`}
+                            className={`flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-lg transition-all ${
+                              isPlaying
+                                ? 'bg-red-500/15 text-red-500 dark:text-red-400 animate-pulse'
+                                : 'bg-[#635BFF]/10 text-[#635BFF] dark:text-indigo-300 hover:bg-[#635BFF]/20'
+                            }`}
+                          >
+                            {isPlaying ? (
+                              <>{/* Stop icon */}
+                                <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><rect x="1" y="1" width="8" height="8" rx="1"/></svg>
+                                <span>Stop</span>
+                              </>
+                            ) : (
+                              <>{/* Play icon */}
+                                <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><polygon points="2,0 10,5 2,10"/></svg>
+                                <span>Listen</span>
+                              </>
+                            )}
+                          </button>
+                          <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-[#635BFF]/10 text-[#635BFF] dark:text-indigo-300">
+                            {vp.provider}
+                          </span>
+                        </div>
                       </div>
                       <p className="text-xs font-semibold text-slate-600 dark:text-slate-300 mt-1">
                         Personality: {vp.personality}
@@ -1047,20 +1145,44 @@ function VoiceStudioView({
                   Assigned Twilio / SIP Phone Number
                 </label>
                 <div className="flex gap-2">
+                  {/* Country Code Dropdown */}
+                  <div className="relative shrink-0" style={{minWidth:'160px'}}>
+                    <select
+                      value={countryCode.code}
+                      onChange={(e) => {
+                        const cc = COUNTRY_CODES.find(c => c.code === e.target.value);
+                        if (cc) {
+                          setCountryCode(cc);
+                          generateNumber(cc);
+                        }
+                      }}
+                      className="w-full appearance-none rounded-xl fj-subcard px-3 py-3 text-sm font-mono pr-8 cursor-pointer"
+                      style={{backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23999' viewBox='0 0 16 16'%3E%3Cpath d='M1.5 5.5l6.5 6 6.5-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center'}}
+                    >
+                      {COUNTRY_CODES.map(cc => (
+                        <option key={cc.code} value={cc.code}>
+                          {cc.flag} {cc.code} {cc.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  {/* Phone Number Input */}
                   <input
                     type="text"
                     value={phoneNumber}
                     onChange={(e) => setPhoneNumber(e.target.value)}
+                    placeholder={countryCode.format}
                     className="w-full rounded-xl fj-subcard px-4 py-3 text-sm font-mono"
                   />
                   <button
                     type="button"
-                    onClick={generateNumber}
-                    className="px-4 py-3 rounded-xl bg-[#635BFF] text-white text-xs font-bold shrink-0"
+                    onClick={() => generateNumber()}
+                    className="px-4 py-3 rounded-xl bg-[#635BFF] text-white text-xs font-bold shrink-0 whitespace-nowrap"
                   >
-                    Generate Toll-Free #
+                    Generate #
                   </button>
                 </div>
+                <p className="text-[11px] text-slate-400 mt-1.5">Full number: {countryCode.code} {phoneNumber}</p>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
@@ -1212,7 +1334,7 @@ function VoiceStudioView({
 
             {/* Controls & Telemetry Footer */}
             <div className="space-y-3">
-              <div className="grid grid-cols-3 gap-2 text-center bg-white/5 rounded-xl p-2.5 border border-white/10 text-xs">
+              <div className="grid grid-cols-4 gap-2 text-center bg-white/5 rounded-xl p-2.5 border border-white/10 text-xs">
                 <div>
                   <span className="text-[10px] text-slate-400 block">Detected Intent</span>
                   <span className="font-mono font-bold text-cyan-300 truncate block">
@@ -1229,6 +1351,12 @@ function VoiceStudioView({
                   <span className="text-[10px] text-slate-400 block">Latency</span>
                   <span className="font-mono font-bold text-white">
                     {lastTelemetry?.latencyMs || 380} ms
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-400 block">Workflow</span>
+                  <span className={`font-mono font-bold truncate block ${lastTelemetry?.workflowState ? 'text-amber-400' : 'text-slate-500'}`}>
+                    {lastTelemetry?.workflowState ? `${lastTelemetry.workflowState.type}:${lastTelemetry.workflowState.state}` : 'none'}
                   </span>
                 </div>
               </div>
@@ -1364,7 +1492,7 @@ function ChatbotStudioView({
     () => (activeTenant?.agents || []).filter((a) => a.type === 'chatbot'),
     [activeTenant]
   );
-  const [selectedBot, setSelectedBot] = useState(chatbots[0] || activeTenant?.agents?.[0] || null);
+  const [selectedBot, setSelectedBot] = useState(chatbots[0] || null);
 
   // Builder state
   const [botName, setBotName] = useState('');
@@ -1381,7 +1509,7 @@ function ChatbotStudioView({
 
   useEffect(() => {
     const list = (activeTenant?.agents || []).filter((a) => a.type === 'chatbot');
-    const chosen = list[0] || activeTenant?.agents?.[0] || null;
+    const chosen = list[0] || null;
     setSelectedBot(chosen);
     setEmbedChannel(`Embedded on ${activeTenant?.domain || 'clientwebsite.com'}`);
     if (chosen) {
@@ -1393,6 +1521,8 @@ function ChatbotStudioView({
           time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         }
       ]);
+    } else {
+      setChatLog([]);
     }
   }, [activeTenant]);
 
@@ -1929,7 +2059,8 @@ function PlaygroundView({
   const [lastWebhookData, setLastWebhookData] = useState(null);
 
   useEffect(() => {
-    const chosen = initialAgent || agents[0] || null;
+    const currentAgents = activeTenant?.agents || [];
+    const chosen = initialAgent || currentAgents[0] || null;
     setSelectedAgent(chosen);
     if (chosen) {
       setMode(chosen.type);
@@ -1958,8 +2089,11 @@ function PlaygroundView({
           extracted_entities: { brand: activeTenant?.brandName }
         }
       });
+    } else {
+      setMessages([]);
+      setLastWebhookData(null);
     }
-  }, [activeTenant?.id, initialAgent?.id]);
+  }, [activeTenant?.id, activeTenant?.agents?.length, initialAgent?.id]);
 
   const runSimulationTurn = async (textToSend) => {
     const text = (textToSend || '').trim();
@@ -1993,7 +2127,7 @@ function PlaygroundView({
             id: `a-${Date.now()}`,
             role: 'agent',
             text: data.reply,
-            meta: `${data.intentDetected} (${Math.round(data.confidence * 100)}%) • ${data.latencyMs}ms`
+            meta: `${data.intentDetected} (${Math.round(data.confidence * 100)}%) • ${data.latencyMs}ms${data.workflowState ? ' • ⚡ ' + data.workflowState.type + ':' + data.workflowState.state : ''}`
           }
         ]);
         setLastWebhookData(data);
@@ -2226,6 +2360,17 @@ function PlaygroundView({
               </div>
             </div>
 
+            {/* Workflow State Indicator */}
+            {lastWebhookData?.workflowState && (
+              <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 mb-3 flex items-center gap-2">
+                <span className="text-amber-400 text-xs">⚡</span>
+                <span className="text-[10px] text-amber-300 font-bold uppercase">Active Workflow</span>
+                <span className="font-mono text-[11px] text-amber-200 ml-auto">
+                  {lastWebhookData.workflowState.type} → {lastWebhookData.workflowState.state}
+                </span>
+              </div>
+            )}
+
             {/* Raw JSON Payload Viewer */}
             <div className="flex-1 bg-black/40 border border-white/10 rounded-xl p-3.5 overflow-y-auto custom-scroll font-mono text-[11px] text-slate-200 leading-relaxed">
               <pre>{JSON.stringify(lastWebhookData || {}, null, 2)}</pre>
@@ -2387,6 +2532,27 @@ function BrandingStudioView({ activeTenant, onBrandingSaved, showToast }) {
   const [accentColor, setAccentColor] = useState('#21C8D8');
   const [monthlyRetainer, setMonthlyRetainer] = useState(1500);
   const [saving, setSaving] = useState(false);
+  const [bpExpanded, setBpExpanded] = useState(false);
+
+  // Business Profile state
+  const [bpStreet, setBpStreet] = useState('');
+  const [bpCity, setBpCity] = useState('');
+  const [bpState, setBpState] = useState('');
+  const [bpZip, setBpZip] = useState('');
+  const [bpCountry, setBpCountry] = useState('');
+  const [bpTimezone, setBpTimezone] = useState('');
+  const [bpWeekdayOpen, setBpWeekdayOpen] = useState('');
+  const [bpWeekdayClose, setBpWeekdayClose] = useState('');
+  const [bpSatOpen, setBpSatOpen] = useState('');
+  const [bpSatClose, setBpSatClose] = useState('');
+  const [bpSunClosed, setBpSunClosed] = useState(true);
+  const [bpContactName, setBpContactName] = useState('');
+  const [bpContactRole, setBpContactRole] = useState('');
+  const [bpContactPhone, setBpContactPhone] = useState('');
+  const [bpContactEmail, setBpContactEmail] = useState('');
+  const [bpEscName, setBpEscName] = useState('');
+  const [bpEscPhone, setBpEscPhone] = useState('');
+  const [bpServiceAreas, setBpServiceAreas] = useState('');
 
   useEffect(() => {
     if (activeTenant) {
@@ -2397,6 +2563,31 @@ function BrandingStudioView({ activeTenant, onBrandingSaved, showToast }) {
       setPrimaryColor(activeTenant.primaryColor || '#635BFF');
       setAccentColor(activeTenant.accentColor || '#21C8D8');
       setMonthlyRetainer(activeTenant.monthlyRetainer || 1500);
+      // Populate business profile fields
+      const bp = activeTenant.businessProfile || {};
+      const addr = bp.address || {};
+      setBpStreet(addr.street || '');
+      setBpCity(addr.city || '');
+      setBpState(addr.state || '');
+      setBpZip(addr.zip || '');
+      setBpCountry(addr.country || '');
+      const hours = bp.hours || {};
+      setBpTimezone(hours.timezone || '');
+      setBpWeekdayOpen(hours.monday?.open || hours.weekdays?.open || '');
+      setBpWeekdayClose(hours.monday?.close || hours.weekdays?.close || '');
+      setBpSatOpen(hours.saturday?.open || '');
+      setBpSatClose(hours.saturday?.close || '');
+      setBpSunClosed(hours.sunday?.closed !== false);
+      const contacts = bp.contacts || {};
+      const primary = contacts.primary || {};
+      setBpContactName(primary.name || '');
+      setBpContactRole(primary.role || '');
+      setBpContactPhone(primary.phone || '');
+      setBpContactEmail(primary.email || '');
+      const esc = contacts.escalation || {};
+      setBpEscName(esc.name || '');
+      setBpEscPhone(esc.phone || '');
+      setBpServiceAreas((bp.serviceAreas || []).join(', '));
     }
   }, [activeTenant]);
 
@@ -2421,7 +2612,25 @@ function BrandingStudioView({ activeTenant, onBrandingSaved, showToast }) {
           logoUrl,
           primaryColor,
           accentColor,
-          monthlyRetainer: Number(monthlyRetainer)
+          monthlyRetainer: Number(monthlyRetainer),
+          businessProfile: {
+            address: { street: bpStreet, city: bpCity, state: bpState, zip: bpZip, country: bpCountry },
+            hours: {
+              timezone: bpTimezone,
+              monday: { open: bpWeekdayOpen, close: bpWeekdayClose },
+              tuesday: { open: bpWeekdayOpen, close: bpWeekdayClose },
+              wednesday: { open: bpWeekdayOpen, close: bpWeekdayClose },
+              thursday: { open: bpWeekdayOpen, close: bpWeekdayClose },
+              friday: { open: bpWeekdayOpen, close: bpWeekdayClose },
+              saturday: { open: bpSatOpen, close: bpSatClose, closed: !bpSatOpen },
+              sunday: { closed: bpSunClosed },
+            },
+            contacts: {
+              primary: { name: bpContactName, role: bpContactRole, phone: bpContactPhone, email: bpContactEmail },
+              escalation: { name: bpEscName, phone: bpEscPhone },
+            },
+            serviceAreas: bpServiceAreas.split(',').map(s => s.trim()).filter(Boolean),
+          }
         })
       });
       const data = await res.json();
@@ -2469,10 +2678,39 @@ function BrandingStudioView({ activeTenant, onBrandingSaved, showToast }) {
               <label className="block text-xs font-bold mb-1.5">Industry Vertical</label>
               <input
                 type="text"
+                list="industry-options-branding"
                 value={industry}
                 onChange={(e) => setIndustry(e.target.value)}
+                placeholder="Select or type a custom industry..."
                 className="w-full rounded-xl fj-subcard px-3.5 py-2.5 text-sm"
               />
+              <datalist id="industry-options-branding">
+                <option value="Healthcare / Medical" />
+                <option value="Dental / Orthodontics" />
+                <option value="Real Estate / Property" />
+                <option value="Legal / Law Firm" />
+                <option value="Finance / Banking" />
+                <option value="Insurance" />
+                <option value="E-Commerce / Retail" />
+                <option value="SaaS / Technology" />
+                <option value="Automotive / Dealership" />
+                <option value="Home Services / HVAC / Solar" />
+                <option value="Hospitality / Hotels / Travel" />
+                <option value="Restaurant / Food Service" />
+                <option value="Education / EdTech" />
+                <option value="Fitness / Wellness / Spa" />
+                <option value="Construction / Contracting" />
+                <option value="Logistics / Transportation" />
+                <option value="Marketing / Advertising Agency" />
+                <option value="Accounting / Tax / CPA" />
+                <option value="Consulting / Professional Services" />
+                <option value="Nonprofit / NGO" />
+                <option value="Government / Public Sector" />
+                <option value="Telecom / Communications" />
+                <option value="Manufacturing / Industrial" />
+                <option value="Entertainment / Media" />
+                <option value="Pet Services / Veterinary" />
+              </datalist>
             </div>
           </div>
 
@@ -2594,6 +2832,75 @@ function BrandingStudioView({ activeTenant, onBrandingSaved, showToast }) {
                 <span className="text-xs font-mono font-bold">{accentColor}</span>
               </div>
             </div>
+          </div>
+
+          {/* Collapsible Business Profile Section */}
+          <div className="border border-white/10 rounded-xl overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setBpExpanded(!bpExpanded)}
+              className="w-full flex items-center justify-between p-3.5 bg-white/5 hover:bg-white/10 transition text-xs font-bold"
+            >
+              <span className="flex items-center gap-2">
+                <Icon name="building" size={14} className="text-cyan-300" />
+                Business Profile (Address, Hours, Contacts)
+              </span>
+              <span className="text-slate-400">{bpExpanded ? '▲' : '▼'}</span>
+            </button>
+            {bpExpanded && (
+              <div className="p-4 space-y-4 border-t border-white/10">
+                {/* Address */}
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-cyan-300 mb-2">📍 Business Address</label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <input type="text" value={bpStreet} onChange={e => setBpStreet(e.target.value)} placeholder="Street Address" className="rounded-lg fj-subcard px-3 py-2 text-xs" />
+                    <input type="text" value={bpCity} onChange={e => setBpCity(e.target.value)} placeholder="City" className="rounded-lg fj-subcard px-3 py-2 text-xs" />
+                    <input type="text" value={bpState} onChange={e => setBpState(e.target.value)} placeholder="State/Province" className="rounded-lg fj-subcard px-3 py-2 text-xs" />
+                    <input type="text" value={bpZip} onChange={e => setBpZip(e.target.value)} placeholder="ZIP/Postal Code" className="rounded-lg fj-subcard px-3 py-2 text-xs" />
+                    <input type="text" value={bpCountry} onChange={e => setBpCountry(e.target.value)} placeholder="Country" className="rounded-lg fj-subcard px-3 py-2 text-xs" />
+                    <input type="text" value={bpServiceAreas} onChange={e => setBpServiceAreas(e.target.value)} placeholder="Service Areas (comma-separated)" className="rounded-lg fj-subcard px-3 py-2 text-xs" />
+                  </div>
+                </div>
+
+                {/* Hours */}
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-cyan-300 mb-2">🕐 Operating Hours</label>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    <input type="text" value={bpTimezone} onChange={e => setBpTimezone(e.target.value)} placeholder="Timezone (e.g. America/New_York)" className="sm:col-span-3 rounded-lg fj-subcard px-3 py-2 text-xs" />
+                    <input type="text" value={bpWeekdayOpen} onChange={e => setBpWeekdayOpen(e.target.value)} placeholder="Mon-Fri Open (e.g. 9:00 AM)" className="rounded-lg fj-subcard px-3 py-2 text-xs" />
+                    <input type="text" value={bpWeekdayClose} onChange={e => setBpWeekdayClose(e.target.value)} placeholder="Mon-Fri Close (e.g. 5:00 PM)" className="rounded-lg fj-subcard px-3 py-2 text-xs" />
+                    <div className="flex items-center gap-2">
+                      <label className="flex items-center gap-1.5 text-xs">
+                        <input type="checkbox" checked={bpSunClosed} onChange={e => setBpSunClosed(e.target.checked)} className="rounded" />
+                        Sunday Closed
+                      </label>
+                    </div>
+                    <input type="text" value={bpSatOpen} onChange={e => setBpSatOpen(e.target.value)} placeholder="Saturday Open" className="rounded-lg fj-subcard px-3 py-2 text-xs" />
+                    <input type="text" value={bpSatClose} onChange={e => setBpSatClose(e.target.value)} placeholder="Saturday Close" className="rounded-lg fj-subcard px-3 py-2 text-xs" />
+                  </div>
+                </div>
+
+                {/* Contacts */}
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-cyan-300 mb-2">👤 Primary Contact</label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <input type="text" value={bpContactName} onChange={e => setBpContactName(e.target.value)} placeholder="Contact Name" className="rounded-lg fj-subcard px-3 py-2 text-xs" />
+                    <input type="text" value={bpContactRole} onChange={e => setBpContactRole(e.target.value)} placeholder="Role/Title" className="rounded-lg fj-subcard px-3 py-2 text-xs" />
+                    <input type="text" value={bpContactPhone} onChange={e => setBpContactPhone(e.target.value)} placeholder="Phone Number" className="rounded-lg fj-subcard px-3 py-2 text-xs" />
+                    <input type="email" value={bpContactEmail} onChange={e => setBpContactEmail(e.target.value)} placeholder="Email Address" className="rounded-lg fj-subcard px-3 py-2 text-xs" />
+                  </div>
+                </div>
+
+                {/* Escalation Contact */}
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-amber-300 mb-2">🚨 Escalation / Emergency Contact</label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <input type="text" value={bpEscName} onChange={e => setBpEscName(e.target.value)} placeholder="Escalation Contact Name" className="rounded-lg fj-subcard px-3 py-2 text-xs" />
+                    <input type="text" value={bpEscPhone} onChange={e => setBpEscPhone(e.target.value)} placeholder="Escalation Phone Number" className="rounded-lg fj-subcard px-3 py-2 text-xs" />
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           <button

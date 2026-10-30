@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const aiEngine = require('./engine');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -33,6 +34,32 @@ let platformState = {
       accentColor: "#06b6d4",
       monthlyRetainer: 1500,
       status: "Active",
+      businessProfile: {
+        address: { street: '1250 Ocean Drive, Suite 400', city: 'Miami', state: 'FL', zip: '33139', country: 'USA' },
+        branches: [],
+        hours: {
+          timezone: 'America/New_York',
+          monday: { open: '8:00 AM', close: '6:00 PM' },
+          tuesday: { open: '8:00 AM', close: '6:00 PM' },
+          wednesday: { open: '8:00 AM', close: '6:00 PM' },
+          thursday: { open: '8:00 AM', close: '6:00 PM' },
+          friday: { open: '8:00 AM', close: '6:00 PM' },
+          saturday: { open: '9:00 AM', close: '3:00 PM' },
+          sunday: { closed: true },
+          holidays: ['Christmas Day', 'Thanksgiving', 'New Year\'s Day'],
+        },
+        contacts: {
+          primary: { name: 'Dr. Sarah Chen', role: 'Lead Dentist', phone: '+1 (888) 412-9040', email: 'info@apexdentalstudio.com' },
+          departments: [
+            { name: 'Appointments', phone: '+1 (888) 412-9041', email: 'appointments@apexdentalstudio.com' },
+            { name: 'Insurance & Billing', phone: '+1 (888) 412-9042', email: 'billing@apexdentalstudio.com' },
+          ],
+          escalation: { name: 'Office Manager', phone: '+1 (888) 412-9040', email: 'manager@apexdentalstudio.com', priority: 'high' },
+          emergencyContact: { name: 'On-Call Dentist', phone: '+1 (888) 412-9099', available24x7: true },
+          fallback: { name: 'Front Desk', phone: '+1 (888) 412-9040', email: 'info@apexdentalstudio.com' },
+        },
+        serviceAreas: ['Miami', 'Miami Beach', 'Coral Gables', 'South Florida'],
+      },
       agents: [
         {
           id: "agent-101",
@@ -72,6 +99,32 @@ let platformState = {
       accentColor: "#f59e0b",
       monthlyRetainer: 2200,
       status: "Active",
+      businessProfile: {
+        address: { street: '999 Brickell Avenue, Penthouse Suite', city: 'Miami', state: 'FL', zip: '33131', country: 'USA' },
+        branches: [
+          { name: 'Dubai Office', address: { street: 'Palm Jumeirah Tower, Level 42', city: 'Dubai', country: 'UAE' }, phone: '+971 4 555 8900' },
+        ],
+        hours: {
+          timezone: 'America/New_York',
+          monday: { open: '9:00 AM', close: '7:00 PM' },
+          tuesday: { open: '9:00 AM', close: '7:00 PM' },
+          wednesday: { open: '9:00 AM', close: '7:00 PM' },
+          thursday: { open: '9:00 AM', close: '7:00 PM' },
+          friday: { open: '9:00 AM', close: '7:00 PM' },
+          saturday: { open: '10:00 AM', close: '5:00 PM' },
+          sunday: { open: '11:00 AM', close: '4:00 PM' },
+        },
+        contacts: {
+          primary: { name: 'James Whitfield', role: 'Senior Broker', phone: '+1 (305) 990-8122', email: 'james@vanguardluxury.io' },
+          departments: [
+            { name: 'Sales', phone: '+1 (305) 990-8123', email: 'sales@vanguardluxury.io' },
+            { name: 'Rentals', phone: '+1 (305) 990-8124', email: 'rentals@vanguardluxury.io' },
+          ],
+          escalation: { name: 'James Whitfield', phone: '+1 (305) 990-8122', email: 'james@vanguardluxury.io', priority: 'high' },
+          emergencyContact: { name: 'VIP Concierge', phone: '+1 (305) 990-8100', available24x7: true },
+        },
+        serviceAreas: ['Miami', 'Brickell', 'Star Island', 'Coral Gables', 'Dubai', 'Palm Jumeirah'],
+      },
       agents: [
         {
           id: "agent-201",
@@ -111,6 +164,30 @@ let platformState = {
       accentColor: "#eab308",
       monthlyRetainer: 1850,
       status: "Active",
+      businessProfile: {
+        address: { street: '4500 Solar Parkway', city: 'Tampa', state: 'FL', zip: '33602', country: 'USA' },
+        branches: [],
+        hours: {
+          timezone: 'America/New_York',
+          monday: { open: '7:00 AM', close: '8:00 PM' },
+          tuesday: { open: '7:00 AM', close: '8:00 PM' },
+          wednesday: { open: '7:00 AM', close: '8:00 PM' },
+          thursday: { open: '7:00 AM', close: '8:00 PM' },
+          friday: { open: '7:00 AM', close: '8:00 PM' },
+          saturday: { open: '8:00 AM', close: '5:00 PM' },
+          sunday: { open: '9:00 AM', close: '3:00 PM' },
+        },
+        contacts: {
+          primary: { name: 'Mike Rodriguez', role: 'Service Manager', phone: '+1 (800) 755-2390', email: 'service@solarishome.energy' },
+          departments: [
+            { name: 'Emergency HVAC', phone: '+1 (800) 755-2391', email: 'emergency@solarishome.energy' },
+            { name: 'Solar Consultations', phone: '+1 (800) 755-2392', email: 'solar@solarishome.energy' },
+          ],
+          escalation: { name: 'Mike Rodriguez', phone: '+1 (800) 755-2390', email: 'service@solarishome.energy', priority: 'high' },
+          emergencyContact: { name: '24/7 Emergency Dispatch', phone: '+1 (800) 755-2399', available24x7: true },
+        },
+        serviceAreas: ['Tampa', 'St. Petersburg', 'Clearwater', 'Central Florida'],
+      },
       agents: [
         {
           id: "agent-301",
@@ -191,6 +268,7 @@ app.post('/api/tenants', (req, res) => {
     accentColor: accentColor || '#21C8D8',
     monthlyRetainer: Number(monthlyRetainer) || 1500,
     status: 'Active',
+    businessProfile: aiEngine.knowledgeBase.createEmptyBusinessProfile(),
     agents: []
   };
 
@@ -238,6 +316,25 @@ app.put('/api/tenants/:tenantId/branding', (req, res) => {
     const diff = Number(monthlyRetainer) - tenant.monthlyRetainer;
     tenant.monthlyRetainer = Number(monthlyRetainer);
     platformState.masterAgency.mrr += diff;
+  }
+
+  // Update business profile if provided
+  const { businessProfile } = req.body;
+  if (businessProfile) {
+    if (!tenant.businessProfile) {
+      tenant.businessProfile = aiEngine.knowledgeBase.createEmptyBusinessProfile();
+    }
+    // Deep merge the business profile
+    if (businessProfile.address) Object.assign(tenant.businessProfile.address, businessProfile.address);
+    if (businessProfile.hours) Object.assign(tenant.businessProfile.hours, businessProfile.hours);
+    if (businessProfile.contacts) {
+      if (businessProfile.contacts.primary) Object.assign(tenant.businessProfile.contacts.primary, businessProfile.contacts.primary);
+      if (businessProfile.contacts.escalation) Object.assign(tenant.businessProfile.contacts.escalation, businessProfile.contacts.escalation);
+      if (businessProfile.contacts.emergencyContact) Object.assign(tenant.businessProfile.contacts.emergencyContact, businessProfile.contacts.emergencyContact);
+      if (businessProfile.contacts.departments) tenant.businessProfile.contacts.departments = businessProfile.contacts.departments;
+    }
+    if (businessProfile.branches) tenant.businessProfile.branches = businessProfile.branches;
+    if (businessProfile.serviceAreas) tenant.businessProfile.serviceAreas = businessProfile.serviceAreas;
   }
 
   res.json({
@@ -338,7 +435,7 @@ app.post('/api/simulate/webhook', (req, res) => {
     platformState.tenants.push(tenant);
   }
   if (!tenant) {
-    tenant = platformState.tenants[0];
+    return res.status(404).json({ error: 'Client workspace not found. Please switch to a valid client first.' });
   }
 
   let agent = tenant.agents.find(a => a.id === agentId);
@@ -358,11 +455,7 @@ app.post('/api/simulate/webhook', (req, res) => {
     tenant.agents.unshift(agent);
   }
   if (!agent) {
-    agent = tenant.agents[0];
-  }
-
-  if (!agent) {
-    return res.status(404).json({ error: 'No active AI agent found to simulate' });
+    return res.status(404).json({ error: `No AI agent found for ${tenant.brandName}. Please deploy an agent first.` });
   }
 
   // Update live telemetry counters
@@ -373,139 +466,58 @@ app.post('/api/simulate/webhook', (req, res) => {
     platformState.masterAgency.messagesHandled += 1;
   }
 
-  const responsePayload = generateIntelligentAgentResponse(tenant, agent, userMessage || '', callHistory || []);
-
-  res.json({
-    webhookEventId: `evt_${Date.now()}`,
-    timestamp: new Date().toISOString(),
-    tenantBrand: tenant.brandName,
-    agentId: agent.id,
-    agentName: agent.name,
-    agentType: agent.type,
-    voiceId: agent.voiceId,
-    phoneNumber: agent.phoneNumber,
-    reply: responsePayload.reply,
-    intentDetected: responsePayload.intent,
-    confidence: responsePayload.confidence,
-    latencyMs: responsePayload.latencyMs,
-    suggestedActions: responsePayload.suggestedActions,
-    webhookPayloadInspector: {
-      provider: agent.type === 'voice' ? 'FJ-Tech Voice Engine (Twilio + ElevenLabs + LLM)' : 'FJ-Tech Omnichannel Chat Webhook',
-      tenant_id: tenant.id,
-      agent_id: agent.id,
-      model: 'fj-tech-realtime-4o',
-      intent: responsePayload.intent,
-      extracted_entities: responsePayload.entities,
-      tool_triggered: responsePayload.toolTriggered
-    },
-    updatedStats: {
-      agentInteractions: agent.interactions,
-      activeCallsToday: platformState.masterAgency.activeCallsToday,
-      messagesHandled: platformState.masterAgency.messagesHandled
-    }
-  });
+  // Use the new AI Engine (async)
+  const sessionKey = req.body.sessionKey || 'default';
+  aiEngine.processMessage(tenant, agent, userMessage || '', callHistory || [], sessionKey)
+    .then(responsePayload => {
+      res.json({
+        webhookEventId: `evt_${Date.now()}`,
+        timestamp: new Date().toISOString(),
+        tenantBrand: tenant.brandName,
+        agentId: agent.id,
+        agentName: agent.name,
+        agentType: agent.type,
+        voiceId: agent.voiceId,
+        phoneNumber: agent.phoneNumber,
+        reply: responsePayload.reply,
+        intentDetected: responsePayload.intent,
+        confidence: responsePayload.confidence,
+        latencyMs: responsePayload.latencyMs,
+        suggestedActions: responsePayload.suggestedActions,
+        workflowState: responsePayload.workflowState || null,
+        webhookPayloadInspector: {
+          provider: agent.type === 'voice' ? 'FJ-Tech Voice Engine (Twilio + ElevenLabs + LLM)' : 'FJ-Tech Omnichannel Chat Webhook',
+          tenant_id: tenant.id,
+          agent_id: agent.id,
+          model: 'fj-tech-realtime-4o',
+          intent: responsePayload.intent,
+          extracted_entities: responsePayload.entities,
+          tool_triggered: responsePayload.toolTriggered
+        },
+        updatedStats: {
+          agentInteractions: agent.interactions,
+          activeCallsToday: platformState.masterAgency.activeCallsToday,
+          messagesHandled: platformState.masterAgency.messagesHandled
+        }
+      });
+    })
+    .catch(err => {
+      console.error('[Webhook Simulation Error]', err);
+      res.status(500).json({ error: 'AI engine error', details: err.message });
+    });
 });
 
-/**
- * Generates context-aware responses grounded in the agent's custom systemPrompt,
- * tenant brand name, and user query so live testing feels authentic and responsive.
- */
-function generateIntelligentAgentResponse(tenant, agent, userMessage, history) {
-  const msg = userMessage.toLowerCase().trim();
-  const prompt = agent.systemPrompt || '';
-  const latencyMs = agent.type === 'voice'
-    ? Math.floor(340 + Math.random() * 140)
-    : Math.floor(190 + Math.random() * 110);
+// 8. Get active conversation sessions (debugging)
+app.get('/api/sessions', (req, res) => {
+  res.json({ sessions: aiEngine.stateManager.getActiveSessions() });
+});
 
-  const priceMatches = prompt.match(/\$[0-9,]+(\.[0-9]{2})?/g) || [];
-  const promptSentences = prompt
-    .split(/(?<=[.!?])\s+/)
-    .map(s => s.trim())
-    .filter(s => s.length > 10);
-
-  let intent = 'general_inquiry';
-  let toolTriggered = 'knowledge_base_rag';
-  let entities = { brand: tenant.brandName };
-  let reply = '';
-  let suggestedActions = ['Book Appointment', 'Ask About Pricing', 'Request Human Transfer'];
-
-  if (/price|cost|how much|quote|rate|fee|budget|dollar|insurance|bill/.test(msg)) {
-    intent = 'pricing_and_packages';
-    toolTriggered = 'pricing_lookup_tool';
-    const pricingSentences = promptSentences.filter(s => /\$|cost|price|fee|insurance|budget|credit|free/i.test(s));
-
-    if (pricingSentences.length > 0) {
-      reply = `Great question! At ${tenant.brandName}, here are our current details: ${pricingSentences.join(' ')} Would you like me to lock in a consultation or send a personalized quote for you?`;
-    } else if (priceMatches.length > 0) {
-      reply = `At ${tenant.brandName}, our standard options start around ${priceMatches.join(' to ')}. I can put together an exact estimate based on your needs—what specific service are you looking for today?`;
-    } else {
-      reply = `We offer tailored options at ${tenant.brandName} depending on your exact needs. Based on my guidelines (${prompt.slice(0, 140)}...), I can schedule a quick 10-minute assessment to give you an exact quote. Does morning or afternoon work better for you?`;
-    }
-    suggestedActions = ['Book Free Assessment', 'Do you take insurance / financing?', 'Schedule for Tomorrow at 10 AM'];
-  }
-  else if (/book|schedule|appointment|visit|showing|consult|tomorrow|today|time|slot|available|calendar/.test(msg)) {
-    intent = 'appointment_booking';
-    toolTriggered = 'calendar_crm_booking_webhook';
-    entities.booking_status = 'slot_offered';
-
-    const hasTimeInMsg = /\b(monday|tuesday|wednesday|thursday|friday|saturday|sunday|tomorrow|today|[0-9]{1,2}\s?(am|pm))\b/i.exec(userMessage);
-    if (hasTimeInMsg) {
-      entities.requested_slot = hasTimeInMsg[0];
-      reply = `I have checked the live calendar for ${tenant.brandName} and confirmed availability for ${hasTimeInMsg[0]}! I've reserved that slot for you. May I please get your full name and best phone number or email to send your calendar confirmation?`;
-      suggestedActions = ['My name is Alex Rivera, 555-0148', 'Can we do 2 hours later instead?', 'What should I bring?'];
-    } else {
-      reply = `I'd be happy to get that scheduled for you with ${tenant.brandName}! I have open priority slots tomorrow at 10:30 AM and 2:00 PM, or Thursday at 11:00 AM. Which of those times works best for you, and what is your full name?`;
-      suggestedActions = ['Tomorrow at 10:30 AM works', 'Thursday at 11:00 AM please', 'Do you have weekend hours?'];
-    }
-  }
-  else if (/\b\d{3}[-.\s]?\d{4}\b|@|my name is|i am [a-z]+/i.test(msg)) {
-    intent = 'lead_capture_confirmed';
-    toolTriggered = 'crm_lead_sync_webhook';
-    entities.lead_captured = true;
-    reply = `Perfect, thank you! I have logged your details directly into ${tenant.brandName}'s CRM and dispatched an instant SMS & email confirmation via our automated workflow. Is there anything else I can help you with before we wrap up?`;
-    suggestedActions = ['What is your address / location?', 'Ask about pricing', 'That is all, thank you!'];
-  }
-  else if (/emergency|urgent|human|manager|person|agent|representative|pain|broken|leak/.test(msg)) {
-    intent = 'priority_escalation';
-    toolTriggered = 'live_warm_transfer_bridge';
-    entities.priority = 'HIGH';
-    const emergencySentence = promptSentences.find(s => /emergency|urgent|dispatch|24\/7|same-day/i.test(s));
-    reply = `I understand this is urgent and I'm prioritizing your request with ${tenant.brandName} right now. ${emergencySentence || 'Our on-call specialist team is available for immediate escalation.'} I am initiating a warm transfer and flagging your file as High Priority—can you confirm the best callback number in case we get disconnected?`;
-    suggestedActions = ['Callback: 555-8392', 'Book Emergency Slot Now', 'How fast can someone arrive?'];
-  }
-  else if (/hour|open|close|location|where|address|weekend|saturday|sunday/.test(msg)) {
-    intent = 'hours_and_location';
-    toolTriggered = 'business_profile_lookup';
-    const hoursSentence = promptSentences.find(s => /mon|tue|wed|thu|fri|sat|sun|am|pm|open|hour|miami|dubai/i.test(s));
-    reply = `${hoursSentence ? hoursSentence : `At ${tenant.brandName}, our AI concierge is available 24/7, and our main office operates Monday through Saturday from 8:00 AM to 6:00 PM.`} Would you like me to reserve a time for you to come in?`;
-    suggestedActions = ['Book an Appointment', 'What services do you offer?', 'Ask about pricing'];
-  }
-  else {
-    const words = msg.split(/\W+/).filter(w => w.length > 3 && !['what', 'have', 'that', 'this', 'with', 'from', 'your', 'about', 'tell', 'more'].includes(w));
-    const matchedSentences = promptSentences.filter(sentence =>
-      words.some(w => sentence.toLowerCase().includes(w))
-    );
-
-    if (matchedSentences.length > 0) {
-      intent = 'knowledge_matched_response';
-      reply = `Here is what I can share for ${tenant.brandName}: ${matchedSentences.join(' ')} How can I help you take the next step today?`;
-    } else {
-      intent = 'concierge_discovery';
-      const summary = promptSentences.slice(0, 2).join(' ');
-      reply = `Thanks for reaching out to ${tenant.brandName}! As ${agent.name.split('-')[0].trim()}, I'm here to help right away. ${summary} Would you like to check our current availability, get a quick price estimate, or ask a specific question?`;
-    }
-  }
-
-  return {
-    reply,
-    intent,
-    confidence: Number((0.94 + Math.random() * 0.05).toFixed(2)),
-    latencyMs,
-    entities,
-    toolTriggered,
-    suggestedActions
-  };
-}
+// 9. Reset a conversation session
+app.post('/api/sessions/reset', (req, res) => {
+  const { tenantId, agentId, sessionKey } = req.body;
+  aiEngine.stateManager.resetSession(tenantId, agentId, sessionKey || 'default');
+  res.json({ message: 'Session reset successfully' });
+});
 
 // Serve frontend/index.html for root and unmatched routes
 app.get('*', (req, res) => {

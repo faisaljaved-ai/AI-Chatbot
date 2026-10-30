@@ -117,10 +117,39 @@ function NewClientWorkspaceModal({ isOpen, onClose, onCreated }) {
               <label className="block text-xs font-bold mb-1.5">Industry *</label>
               <input
                 type="text"
+                list="industry-options-modal"
                 value={industry}
                 onChange={(e) => setIndustry(e.target.value)}
+                placeholder="Select or type a custom industry..."
                 className="w-full rounded-xl fj-subcard px-3.5 py-2.5 text-sm"
               />
+              <datalist id="industry-options-modal">
+                <option value="Healthcare / Medical" />
+                <option value="Dental / Orthodontics" />
+                <option value="Real Estate / Property" />
+                <option value="Legal / Law Firm" />
+                <option value="Finance / Banking" />
+                <option value="Insurance" />
+                <option value="E-Commerce / Retail" />
+                <option value="SaaS / Technology" />
+                <option value="Automotive / Dealership" />
+                <option value="Home Services / HVAC / Solar" />
+                <option value="Hospitality / Hotels / Travel" />
+                <option value="Restaurant / Food Service" />
+                <option value="Education / EdTech" />
+                <option value="Fitness / Wellness / Spa" />
+                <option value="Construction / Contracting" />
+                <option value="Logistics / Transportation" />
+                <option value="Marketing / Advertising Agency" />
+                <option value="Accounting / Tax / CPA" />
+                <option value="Consulting / Professional Services" />
+                <option value="Nonprofit / NGO" />
+                <option value="Government / Public Sector" />
+                <option value="Telecom / Communications" />
+                <option value="Manufacturing / Industrial" />
+                <option value="Entertainment / Media" />
+                <option value="Pet Services / Veterinary" />
+              </datalist>
             </div>
           </div>
 
