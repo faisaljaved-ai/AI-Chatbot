@@ -147,10 +147,25 @@ app.get('/api/state', (req, res) => {
 
 // 2. Switch active client tenant workspace
 app.post('/api/tenants/switch', (req, res) => {
-  const { tenantId } = req.body;
-  const found = platformState.tenants.find(t => t.id === tenantId);
+  const { tenantId, tenantSnapshot } = req.body;
+  let found = platformState.tenants.find(t => t.id === tenantId);
+  if (!found && tenantSnapshot && tenantSnapshot.brandName) {
+    found = {
+      id: tenantId || `tenant-${Date.now()}`,
+      brandName: tenantSnapshot.brandName,
+      industry: tenantSnapshot.industry || 'Enterprise',
+      domain: tenantSnapshot.domain || 'ai.portal.com',
+      logoUrl: tenantSnapshot.logoUrl || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=120&auto=format&fit=crop&q=80',
+      primaryColor: tenantSnapshot.primaryColor || '#635BFF',
+      accentColor: tenantSnapshot.accentColor || '#21C8D8',
+      monthlyRetainer: Number(tenantSnapshot.monthlyRetainer) || 1500,
+      status: 'Active',
+      agents: Array.isArray(tenantSnapshot.agents) ? tenantSnapshot.agents : []
+    };
+    platformState.tenants.push(found);
+  }
   if (!found) {
-    return res.status(404).json({ error: 'Client workspace not found' });
+    found = platformState.tenants[0];
   }
   platformState.activeTenantId = found.id;
   res.json({
@@ -172,8 +187,8 @@ app.post('/api/tenants', (req, res) => {
     industry: industry || 'Commercial Enterprise',
     domain: domain || `ai.${brandName.toLowerCase().replace(/[^a-z0-9]/g, '')}.com`,
     logoUrl: logoUrl || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=120&auto=format&fit=crop&q=80',
-    primaryColor: primaryColor || '#6366f1',
-    accentColor: accentColor || '#06b6d4',
+    primaryColor: primaryColor || '#635BFF',
+    accentColor: accentColor || '#21C8D8',
     monthlyRetainer: Number(monthlyRetainer) || 1500,
     status: 'Active',
     agents: []
@@ -196,9 +211,21 @@ app.put('/api/tenants/:tenantId/branding', (req, res) => {
   const { tenantId } = req.params;
   const { brandName, logoUrl, primaryColor, accentColor, domain, industry, monthlyRetainer } = req.body;
 
-  const tenant = platformState.tenants.find(t => t.id === tenantId);
+  let tenant = platformState.tenants.find(t => t.id === tenantId);
   if (!tenant) {
-    return res.status(404).json({ error: 'Tenant not found' });
+    tenant = {
+      id: tenantId,
+      brandName: (brandName && brandName.trim()) || 'Custom Client Workspace',
+      industry: industry || 'Enterprise',
+      domain: domain || 'ai.clientportal.com',
+      logoUrl: logoUrl || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=120&auto=format&fit=crop&q=80',
+      primaryColor: primaryColor || '#635BFF',
+      accentColor: accentColor || '#21C8D8',
+      monthlyRetainer: Number(monthlyRetainer) || 1500,
+      status: 'Active',
+      agents: []
+    };
+    platformState.tenants.push(tenant);
   }
 
   if (brandName !== undefined && brandName.trim() !== '') tenant.brandName = brandName.trim();
@@ -223,11 +250,28 @@ app.put('/api/tenants/:tenantId/branding', (req, res) => {
 // 5. Create & Deploy a new AI Voice Call Agent or Website Chatbot for a tenant
 app.post('/api/tenants/:tenantId/agents', (req, res) => {
   const { tenantId } = req.params;
-  const { name, type, voiceId, phoneNumber, greeting, systemPrompt } = req.body;
+  const { name, type, voiceId, phoneNumber, greeting, systemPrompt, tenantSnapshot } = req.body;
 
-  const tenant = platformState.tenants.find(t => t.id === tenantId);
+  let tenant = platformState.tenants.find(t => t.id === tenantId);
+  // If serverless instance cold-started after a custom tenant was created in the browser, auto-rehydrate it!
+  if (!tenant && tenantSnapshot && tenantSnapshot.brandName) {
+    tenant = {
+      id: tenantId,
+      brandName: tenantSnapshot.brandName,
+      industry: tenantSnapshot.industry || 'Commercial Enterprise',
+      domain: tenantSnapshot.domain || `ai.${tenantSnapshot.brandName.toLowerCase().replace(/[^a-z0-9]/g, '')}.com`,
+      logoUrl: tenantSnapshot.logoUrl || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=120&auto=format&fit=crop&q=80',
+      primaryColor: tenantSnapshot.primaryColor || '#635BFF',
+      accentColor: tenantSnapshot.accentColor || '#21C8D8',
+      monthlyRetainer: Number(tenantSnapshot.monthlyRetainer) || 1500,
+      status: 'Active',
+      agents: Array.isArray(tenantSnapshot.agents) ? [...tenantSnapshot.agents] : []
+    };
+    platformState.tenants.push(tenant);
+    platformState.activeTenantId = tenant.id;
+  }
   if (!tenant) {
-    return res.status(404).json({ error: 'Client tenant not found' });
+    tenant = platformState.tenants.find(t => t.id === platformState.activeTenantId) || platformState.tenants[0];
   }
 
   if (!name || !systemPrompt) {
@@ -264,10 +308,7 @@ app.post('/api/tenants/:tenantId/agents', (req, res) => {
 // 6. Delete an agent from a tenant
 app.delete('/api/tenants/:tenantId/agents/:agentId', (req, res) => {
   const { tenantId, agentId } = req.params;
-  const tenant = platformState.tenants.find(t => t.id === tenantId);
-  if (!tenant) {
-    return res.status(404).json({ error: 'Tenant not found' });
-  }
+  const tenant = platformState.tenants.find(t => t.id === tenantId) || platformState.tenants[0];
 
   tenant.agents = tenant.agents.filter(a => a.id !== agentId);
   res.json({
@@ -278,10 +319,47 @@ app.delete('/api/tenants/:tenantId/agents/:agentId', (req, res) => {
 
 // 7. Live Interactive Webhook Simulator (handles both Voice Call turns & Website Chat messages)
 app.post('/api/simulate/webhook', (req, res) => {
-  const { tenantId, agentId, userMessage, mode, callHistory } = req.body;
+  const { tenantId, agentId, userMessage, mode, callHistory, tenantSnapshot, agentSnapshot } = req.body;
 
-  const tenant = platformState.tenants.find(t => t.id === tenantId) || platformState.tenants[0];
-  const agent = tenant.agents.find(a => a.id === agentId) || tenant.agents[0];
+  let tenant = platformState.tenants.find(t => t.id === tenantId);
+  if (!tenant && tenantSnapshot && tenantSnapshot.brandName) {
+    tenant = {
+      id: tenantId || `tenant-${Date.now()}`,
+      brandName: tenantSnapshot.brandName,
+      industry: tenantSnapshot.industry || 'Enterprise',
+      domain: tenantSnapshot.domain || 'ai.portal.com',
+      logoUrl: tenantSnapshot.logoUrl || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=120&auto=format&fit=crop&q=80',
+      primaryColor: tenantSnapshot.primaryColor || '#635BFF',
+      accentColor: tenantSnapshot.accentColor || '#21C8D8',
+      monthlyRetainer: Number(tenantSnapshot.monthlyRetainer) || 1500,
+      status: 'Active',
+      agents: Array.isArray(tenantSnapshot.agents) ? [...tenantSnapshot.agents] : []
+    };
+    platformState.tenants.push(tenant);
+  }
+  if (!tenant) {
+    tenant = platformState.tenants[0];
+  }
+
+  let agent = tenant.agents.find(a => a.id === agentId);
+  if (!agent && agentSnapshot && agentSnapshot.name) {
+    agent = {
+      id: agentId || `agent-${Date.now()}`,
+      name: agentSnapshot.name,
+      type: agentSnapshot.type || (mode === 'voice' ? 'voice' : 'chatbot'),
+      voiceId: agentSnapshot.voiceId || 'ElevenLabs - Rachel (Warm & Professional)',
+      phoneNumber: agentSnapshot.phoneNumber || '+1 (888) 555-0199',
+      greeting: agentSnapshot.greeting || `Welcome to ${tenant.brandName}!`,
+      systemPrompt: agentSnapshot.systemPrompt || '',
+      status: 'Deployed',
+      interactions: Number(agentSnapshot.interactions) || 1,
+      avgLatencyMs: Number(agentSnapshot.avgLatencyMs) || 320
+    };
+    tenant.agents.unshift(agent);
+  }
+  if (!agent) {
+    agent = tenant.agents[0];
+  }
 
   if (!agent) {
     return res.status(404).json({ error: 'No active AI agent found to simulate' });

@@ -1,9 +1,10 @@
 {
   "name": "fj-tech-solutions-platform",
-  "version": "1.0.0",
-  "description": "FJ-Tech Solutions - White-Label AI Voice & Chatbot Reseller Platform",
+  "version": "2.0.0",
+  "description": "FJ-Tech Solutions - Intelligent AI Command Center",
   "main": "server.js",
   "scripts": {
+    "dev": "node backend/server.js",
     "start": "node backend/server.js"
   },
   "dependencies": {
