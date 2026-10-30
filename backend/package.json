@@ -1,0 +1,14 @@
+{
+  "name": "fj-tech-solutions-backend",
+  "version": "1.0.0",
+  "description": "FJ-Tech Solutions - White-Label AI Voice & Chatbot Reseller Backend API",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.1"
+  }
+}
+
