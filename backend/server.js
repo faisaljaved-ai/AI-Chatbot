@@ -434,12 +434,17 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(FRONTEND_DIR, 'index.html'));
 });
 
-app.listen(PORT, () => {
-  console.log(`\n==================================================================`);
-  console.log(`🚀 FJ-Tech Solutions White-Label AI Platform is LIVE!`);
-  console.log(`📂 Backend API Directory : ${__dirname}`);
-  console.log(`🎨 Frontend UI Directory : ${FRONTEND_DIR}`);
-  console.log(`🌐 Local Dashboard URL   : http://localhost:${PORT}`);
-  console.log(`==================================================================\n`);
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`\n==================================================================`);
+    console.log(`🚀 FJ-Tech Solutions White-Label AI Platform is LIVE!`);
+    console.log(`📂 Backend API Directory : ${__dirname}`);
+    console.log(`🎨 Frontend UI Directory : ${FRONTEND_DIR}`);
+    console.log(`🌐 Local Dashboard URL   : http://localhost:${PORT}`);
+    console.log(`==================================================================\n`);
+  });
+}
+
+module.exports = app;
+
 
